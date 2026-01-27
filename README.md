@@ -113,7 +113,7 @@ frontier.
 The first step of filtering the urls can be by using the **is_valid** function
 provided in the same scraper.py file. Additional rules should be added to the is_valid function to filter the urls.
 
-EXECUTION
+EXECUTION (read till here including it)
 -------------------------
 
 To execute the crawler run the launch.py command.
