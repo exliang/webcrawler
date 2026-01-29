@@ -2,6 +2,12 @@ import re, utils
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 
+# dict to keep track of stat values
+stats = {
+    "unique_pgs": set(),
+    "longest_page": ("", 0), # (url, wordcount)
+}
+
 def scraper(url: str, resp: utils.response.Response) -> list:
     """
     url: the URL that was added to the frontier, and downloaded from the cache
@@ -9,6 +15,19 @@ def scraper(url: str, resp: utils.response.Response) -> list:
     resp: response given by the caching server for the requested URL 
         (an object of type Response)
     """
+    if resp.status == 200: #TODO: may need to check resp.raw_response & resp.raw_response.content?
+        # for finding num of unique pgs (remove fragment & add url to set)
+        unfragmented_url = urldefrag(resp.url)[0]
+        stats["unique_pgs"].add(unfragmented_url)
+
+        # for finding longest pg word-wise (extract only text from html)
+        html = BeautifulSoup(resp.raw_response.content, 'html.parser')
+        text = html.get_text(separator=" ") # split words by space for effective counting
+        num_words = len(text.split())
+        if num_words > stats["longest_page"][1]: 
+            stats["longest_page"] = (url, num_words) #deframented url instead?
+
+
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -28,26 +47,25 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
     
     hyperlinks = [] # list to store all hyperlinks gathered 
 
-    # check if response status is 200, raw_response exists, content isn't empty
-    if resp.status == 200 and resp.raw_response and resp.raw_response.content: # successfully got the pg
-        # parse HTML
-        html = BeautifulSoup(resp.raw_response.content, 'html.parser')
-
-        # extract hyperlinks: <a href>
-        for hyperlink in html.find_all('a'):
-            link = hyperlink.get('href').strip() # get rid of uncessary white space
-            if link: # prevents empty links
-                # Normalize URLs (so that every href str is following same url format)
-                absolute_url = urljoin(url, link) # join relative URLs to base URL
-                absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
-                # absolute_url = absolute_url.lower() # convert everything to lowercase for correct matching
-                # # remove trailing slashes 
-                hyperlinks.append(absolute_url) # add normalized url to list
-        
-        return hyperlinks
-    else: # error occurred 
-        # print(resp.error)
+    # check if response status isn't 200, raw_response doesn't exists, or content is empty
+    if resp.status != 200 or not resp.raw_response or not resp.raw_response.content: 
         return []
+
+    # parse HTML
+    html = BeautifulSoup(resp.raw_response.content, 'html.parser')
+
+    # extract hyperlinks: <a href>
+    for hyperlink in html.find_all('a'):
+        link = hyperlink.get('href')
+        if link: # prevents empty links
+            link = link.strip() # get rid of uncessary white space
+            
+            # Normalize URLs (so that every href str is following same url format)
+            absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
+            absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
+            hyperlinks.append(absolute_url) # add normalized url to list
+        
+    return hyperlinks
 
 
 def is_valid(url: str) -> bool: #kay
@@ -73,6 +91,7 @@ def is_valid(url: str) -> bool: #kay
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
 
 
 # Sources:
