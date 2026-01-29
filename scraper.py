@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 # dict to keep track of stat values
 stats = {
     "unique_pgs": set(),
-    "longest_page": ("", 0), # (url, wordcount)
+    "longest_page": ("", 0), #(url, wordcount)
 }
 
 def scraper(url: str, resp: utils.response.Response) -> list:
@@ -15,17 +15,22 @@ def scraper(url: str, resp: utils.response.Response) -> list:
     resp: response given by the caching server for the requested URL 
         (an object of type Response)
     """
-    if resp.status == 200: #TODO: may need to check resp.raw_response & resp.raw_response.content?
+    if resp.status == 200 and resp.raw_response and resp.raw_response.content:
         # for finding num of unique pgs (remove fragment & add url to set)
         unfragmented_url = urldefrag(resp.url)[0]
         stats["unique_pgs"].add(unfragmented_url)
 
-        # for finding longest pg word-wise (extract only text from html)
+        # for finding longest pg word-wise (extract only text from html) NOTE: might need to edit tokenizer func instead since some words include punc
         html = BeautifulSoup(resp.raw_response.content, 'html.parser')
         text = html.get_text(separator=" ") # split words by space for effective counting
         num_words = len(text.split())
         if num_words > stats["longest_page"][1]: 
-            stats["longest_page"] = (url, num_words) #deframented url instead?
+            stats["longest_page"] = (url, num_words)
+
+        # TODO: for finding 50 most common words 
+        # edit tokenizer method?
+
+        # TODO: for finding num of subdomains
 
 
     links = extract_next_links(url, resp)
