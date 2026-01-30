@@ -13,7 +13,7 @@ stats = {
 # load stopwords once
 def load_stopwords(path: str):
     with open(path, "r", encoding="utf-8") as file:
-        return {word for word in file}
+        return {word.strip() for word in file}
 STOP_WORDS = load_stopwords("stopwords.txt")
 
 
@@ -35,9 +35,6 @@ def scraper(url: str, resp: utils.response.Response) -> list:
         html = BeautifulSoup(resp.raw_response.content, "html.parser")
         pg_text = html.get_text(separator=" ")
         update_word_counts(pg_text)
-
-        # for finding num of subdomains
-        find_subdomains()
 
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -129,16 +126,20 @@ def update_word_counts(text: str):
         if token not in STOP_WORDS:
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
-def find_subdomains(): #TODO
-    pass
 
 # NOTE: run these at the end once the crawler is done for the report
 def find_50_most_common_words():
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
-print(len(stats["unique_pgs"]))
-print(stats["longest_page"][0])
-print(find_50_most_common_words())
+def find_total_subdomains() -> list: #TODO
+    # for finding num of subdomains
+    unique_pgs = stats["unique_pgs"]
+    return sorted([unique_pg for unique_pg in unique_pgs if ____])
+
+# print(len(stats["unique_pgs"]))
+# print(stats["longest_page"][0])
+# print(find_50_most_common_words())
+# print(find_total_subdomains())) #TODO
 
 
 # Sources:
