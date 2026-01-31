@@ -7,7 +7,8 @@ import string
 stats = {
     "unique_pgs": set(),
     "longest_page": ("", 0), #(url, wordcount)
-    "word_counts": {} # word: count
+    "word_counts": {}, #{word: count}
+    "subdomains": {} #{subdomain: unqiuepages}
 }
 
 # load stopwords once
@@ -99,6 +100,7 @@ def is_valid(url: str) -> bool: #kay
         print ("TypeError for ", parsed)
         raise
 
+
 def find_unique_pages(resp: utils.response.Response):
     # for finding num of unique pgs (remove fragment & add url to set)
     unfragmented_url = urldefrag(resp.url)[0]
@@ -131,15 +133,20 @@ def update_word_counts(text: str):
 def find_50_most_common_words():
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
-def find_total_subdomains() -> list: #TODO
+def find_total_subdomains() -> list:
     # for finding num of subdomains
     unique_pgs = stats["unique_pgs"]
-    return sorted([unique_pg for unique_pg in unique_pgs if ____])
+    for url in unique_pgs:
+        parsed_url = urlparse(url)
+        domain = parsed_url.hostname #doesn't include the port
+        if domain and domain.endswith("uci.edu"):
+            stats["subdomains"][domain] = stats["subdomains"].get(domain, 0) + 1
+    return sorted(stats["subdomains"].items())
 
 # print(len(stats["unique_pgs"]))
 # print(stats["longest_page"][0])
 # print(find_50_most_common_words())
-# print(find_total_subdomains())) #TODO
+# print(find_total_subdomains())) #only call once or counts will accumulate
 
 
 # Sources:
