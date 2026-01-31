@@ -82,6 +82,7 @@ def is_valid(url: str) -> bool: #kay
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     # NOTE: returns only URLs that are within the domains and paths mentioned in assignment
+    # (ex: https://www.ics.uci.edu/ & https://ics.uci.edu/ both valid)
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
@@ -134,7 +135,7 @@ def find_50_most_common_words():
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
 def find_total_subdomains() -> list:
-    # for finding num of subdomains
+    # for finding num of subdomains 
     unique_pgs = stats["unique_pgs"]
     for url in unique_pgs:
         parsed_url = urlparse(url)
