@@ -1,7 +1,6 @@
-import re, utils
+import re, utils, string
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
-import string
 
 # dict to keep track of stat values
 stats = {
@@ -47,13 +46,6 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
             resp - response from server
         Returns: a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     """
-    # resp.url: the actual url of the page (final url that got fetched)
-    # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
-    # resp.error: when status is not 200, you can check the error here, if needed.
-    # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
-    #         resp.raw_response.url: the url, again
-    #         resp.raw_response.content: the content of the page!
-    
     hyperlinks = [] # list to store all hyperlinks gathered 
 
     # check if response status isn't 200, raw_response doesn't exists, or content is empty
@@ -82,6 +74,7 @@ def is_valid(url: str) -> bool: #kay
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     # NOTE: returns only URLs that are within the domains and paths mentioned in assignment
+    # (ex: https://www.ics.uci.edu/ & https://ics.uci.edu/ both valid)
     try:
         parsed = urlparse(url)
 
@@ -148,7 +141,7 @@ def tokenize(text: str):
 def update_word_counts(text: str):
     tokens = tokenize(text)
     for token in tokens: 
-        if token not in STOP_WORDS:
+        if token and token not in STOP_WORDS:
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
 
@@ -157,7 +150,7 @@ def find_50_most_common_words():
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
 def find_total_subdomains() -> list:
-    # for finding num of subdomains
+    # for finding num of subdomains 
     unique_pgs = stats["unique_pgs"]
     for url in unique_pgs:
         parsed_url = urlparse(url)
