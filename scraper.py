@@ -11,7 +11,7 @@ stats = {
     "subdomains": {} #{subdomain: unqiuepages}
 }
 
-# load stopwords once 
+# load stopwords once
 def load_stopwords(path: str):
     with open(path, "r", encoding="utf-8") as file:
         return {word.strip() for word in file}
@@ -101,7 +101,7 @@ def is_valid(url: str) -> bool: #kay
             "stat.uci.edu"
         ]
 
-        # Check if domain matches the allowed domains
+        # Check if the domain matches the allowed domains
         if not any (parsed.hostname.endswith(domain) for domain in allowed_domains):
             return False
 
