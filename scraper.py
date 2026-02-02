@@ -59,7 +59,7 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
     for hyperlink in html.find_all('a'):
         link = hyperlink.get('href')
         if link: # prevents empty links
-            link = link.strip() # get rid of uncessary white space
+            link = link.strip() # get rid of unecessary white space
             
             # Normalize URLs (so that every href str is following same url format)
             absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
@@ -69,7 +69,11 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
     return hyperlinks
 
 def is_valid(url: str) -> bool: #kay
-    """Decides whether a URL should be crawled. Returns True if the URL is valid, False otherwise."""
+    """ Decides whether a URL should be crawled. Returns True if the URL is valid, False otherwise.
+        Args:
+            url - the URL to validate
+        Returns: bool - True whether if URL should be crawled, False if otherwise
+    """
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
@@ -117,11 +121,21 @@ def is_valid(url: str) -> bool: #kay
         raise
 
 def find_unique_pages(resp: utils.response.Response):
+    """ Finds and tracks unique pages. Duplicate URLs are ignored.
+        Args:
+            resp - response from server
+    """
     # for finding num of unique pgs (remove fragment & add url to set)
     unfragmented_url = urldefrag(resp.url)[0]
     stats["unique_pgs"].add(unfragmented_url)
 
 def find_longest_page(url: str, resp: utils.response.Response):
+    """ Finds the longest page based on word count.
+        Compares the current page count to the current longest page count.
+        Arg:
+            url - the URL of the page
+            resp - the response from server
+    """
     # for finding longest pg word-wise (extract only text from html)
     html = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text = html.get_text(separator=" ") # split words by space for effective counting
@@ -130,7 +144,12 @@ def find_longest_page(url: str, resp: utils.response.Response):
         stats["longest_page"] = (resp.url, num_words)
 
 def tokenize(text: str):
-    """Helper func for find_word_counts()"""
+    """Helper func for update_word_counts()
+    Turns the raw text into a list of lowercase words and removes punctuation.
+        Arg:
+            text - the raw text taken from the HTML page
+        Returns: a list of lowercase words
+    """
     # end --> end
     # (.word) --> word
     # don't --> don't (keep punc in the middle of the word)
@@ -138,6 +157,10 @@ def tokenize(text: str):
     return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)]
 
 def update_word_counts(text: str):
+    """ Updates the word count for each word on the page.
+        Arg:
+            text - the raw text taken from the HTML page
+    """
     tokens = tokenize(text)
     for token in tokens: 
         if token and token not in STOP_WORDS:
@@ -146,9 +169,17 @@ def update_word_counts(text: str):
 
 # NOTE: run these at the end once the crawler is done for the report
 def find_50_most_common_words():
+    """ Finds 50 most common words from all the pages crawled.
+        Returns: list of tuples sorted by count
+    """
+    # returns
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
 def find_total_subdomains() -> list:
+    """ Finds all subdomains and counts how many unique pages are found.
+        Groups unique pages by their subdomain.
+        Returns: a list of tuples sorted alphabetically
+    """
     # for finding num of subdomains 
     unique_pgs = stats["unique_pgs"]
     for url in unique_pgs:
