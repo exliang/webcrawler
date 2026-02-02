@@ -11,7 +11,7 @@ stats = {
     "subdomains": {} #{subdomain: unqiuepages}
 }
 
-# load stopwords once
+# load stopwords once 
 def load_stopwords(path: str):
     with open(path, "r", encoding="utf-8") as file:
         return {word.strip() for word in file}
