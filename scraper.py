@@ -1,7 +1,6 @@
-import re, utils
+import re, utils, string
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
-import string
 
 # dict to keep track of stat values
 stats = {
@@ -47,13 +46,6 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
             resp - response from server
         Returns: a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     """
-    # resp.url: the actual url of the page (final url that got fetched)
-    # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
-    # resp.error: when status is not 200, you can check the error here, if needed.
-    # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
-    #         resp.raw_response.url: the url, again
-    #         resp.raw_response.content: the content of the page!
-    
     hyperlinks = [] # list to store all hyperlinks gathered 
 
     # check if response status isn't 200, raw_response doesn't exists, or content is empty
@@ -121,12 +113,12 @@ def tokenize(text: str):
     # (.word) --> word
     # don't --> don't (keep punc in the middle of the word)
     # convert to lowercase & remove punctuation at front and end of word (word alr slit by space)
-    return [word.lower().strip(string.punctuation) for word in text]
+    return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)]
 
 def update_word_counts(text: str):
     tokens = tokenize(text)
     for token in tokens: 
-        if token not in STOP_WORDS:
+        if token and token not in STOP_WORDS:
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
 
