@@ -31,7 +31,7 @@ class Frontier(object):
         else:
             # Set the frontier state with contents of save file.
             self._parse_save_file()
-            if len(self.save) == 0: #CHANGED (not self.save)
+            if not self.save: #CHANGED (not self.save)
                 for url in self.config.seed_urls:
                     self.add_url(url)
 
