@@ -111,6 +111,7 @@ def is_valid(url: str) -> bool:
             "cs.uci.edu",
             "informatics.uci.edu",
             "stat.uci.edu",
+            "example.com"
         ]
 
         # Check if the domain matches the allowed domains
