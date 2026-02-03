@@ -26,6 +26,8 @@ def scraper(url: str, resp: Response) -> list:
     resp: response given by the caching server for the requested URL 
         (an object of type Response)
     """
+    print(f"Status: {resp.status}, Has content: {resp.raw_response is not None}")
+    
     if resp.status == 200 and resp.raw_response and resp.raw_response.content:
         # extract pg's text
         html = BeautifulSoup(resp.raw_response.content, "html.parser")
@@ -105,7 +107,6 @@ def is_valid(url: str) -> bool:
             "cs.uci.edu",
             "informatics.uci.edu",
             "stat.uci.edu",
-            "python.org" #NOTE: TESTING REMOVE BEFORE DEPLOYMENT
         ]
 
         # Check if the domain matches the allowed domains
