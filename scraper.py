@@ -1,6 +1,7 @@
-import re, utils, string, hashlib
+import re, string, hashlib
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
+from utils.response import Response
 
 # dict to keep track of stat values
 stats = {
@@ -18,7 +19,7 @@ def load_stopwords(path: str):
 STOP_WORDS = load_stopwords("stopwords.txt")
 
 
-def scraper(url: str, resp: utils.response.Response) -> list:
+def scraper(url: str, resp: Response) -> list:
     """
     url: the URL that was added to the frontier, and downloaded from the cache
         (type str and was an url that was previously added to the frontier)
@@ -51,7 +52,7 @@ def scraper(url: str, resp: utils.response.Response) -> list:
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
-def extract_next_links(url: str, resp: utils.response.Response) -> list:
+def extract_next_links(url: str, resp: Response) -> list:
     """ Extracts all hyperlinks from a page's HTML content and returns them as a list of strings.
         Args:
             url - the URL that was used to get the page
@@ -131,12 +132,12 @@ def is_valid(url: str) -> bool:
         print ("TypeError for ", parsed)
         raise
 
-def find_unique_pages(resp: utils.response.Response) -> None:
+def find_unique_pages(resp: Response) -> None:
     # for finding num of unique pgs (remove fragment & add url to set)
     unfragmented_url = urldefrag(resp.url)[0]
     stats["unique_pgs"].add(unfragmented_url)
 
-def find_longest_page(url: str, resp: utils.response.Response) -> None:
+def find_longest_page(url: str, resp: Response) -> None:
     # for finding longest pg word-wise (extract only text from html)
     html = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text = html.get_text(separator=" ") # split words by space for effective counting
