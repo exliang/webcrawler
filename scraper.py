@@ -3,8 +3,6 @@ from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from utils.response import Response
 
-print("scraper.py loaded")
-
 # dict to keep track of stat values
 stats = {
     "unique_pgs": set(),
@@ -39,7 +37,11 @@ def scraper(url: str, resp: Response) -> list:
         if len(pg_text.split()) < 50: # defined threashold < 50 words
             return []
 
-        # TODO: detect & avoid crawling very large files (esp if they hv low info value)
+        # detect & avoid crawling very large files esp if they hv low info value
+        MAX_FILE_SIZE = 1_000_000 # 1 MB
+        pg_content_length = resp.headers.get("Content-Length")
+        if (pg_content_length and int(pg_content_length) > MAX_FILE_SIZE) or len(resp.content) > MAX_FILE_SIZE:
+            return []
 
         # for finding num of unique pgs (remove fragment & add url to set)
         find_unique_pages(resp)
@@ -126,8 +128,8 @@ def is_valid(url: str) -> bool:
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
         
-        # Check for traps
-        #TODO
+        # TODO: Check for traps
+        
 
         return True
 
