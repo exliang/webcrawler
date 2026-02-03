@@ -104,7 +104,8 @@ def is_valid(url: str) -> bool:
             "ics.uci.edu",
             "cs.uci.edu",
             "informatics.uci.edu",
-            "stat.uci.edu"
+            "stat.uci.edu",
+            "https://www.python.org" #NOTE: TESTING REMOVE BEFORE DEPLOYMENT
         ]
 
         # Check if the domain matches the allowed domains
