@@ -93,10 +93,12 @@ def is_valid(url: str) -> bool:
 
         # Valid for only http/https
         if parsed.scheme not in set(["http", "https"]):
+            print("a")
             return False
 
         # Use hostname for domain
         if not parsed.hostname:
+            print("b")
             return False
 
         # Valid for allowed domains
@@ -110,6 +112,7 @@ def is_valid(url: str) -> bool:
 
         # Check if the domain matches the allowed domains
         if not any (parsed.hostname.endswith(domain) for domain in allowed_domains):
+            print("c")
             return False
 
         # Check for bad files (#TODO: may be more)
@@ -122,6 +125,7 @@ def is_valid(url: str) -> bool:
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
+            print("d")
             return False
         
         # Check for traps
