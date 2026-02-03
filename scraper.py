@@ -1,4 +1,4 @@
-import re, utils, string
+import re, utils, string, hashlib
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 
@@ -7,7 +7,8 @@ stats = {
     "unique_pgs": set(),
     "longest_page": ("", 0), #(url, wordcount)
     "word_counts": {}, #{word: count}
-    "subdomains": {} #{subdomain: unqiuepages}
+    "subdomains": {}, #{subdomain: unqiuepages}
+    "seen_fingerprints": set()
 }
 
 # load stopwords once
@@ -25,6 +26,19 @@ def scraper(url: str, resp: utils.response.Response) -> list:
         (an object of type Response)
     """
     if resp.status == 200 and resp.raw_response and resp.raw_response.content:
+        # extract pg's text
+        html = BeautifulSoup(resp.raw_response.content, "html.parser")
+        pg_text = html.get_text(separator=" ")
+
+        # detect & avoid sets of similar pgs w no info (exact duplicates) #TODO: need to check near-dupes too?
+        pg_fingerprint = hashlib.md5(pg_text.encode("utf-8")).hexdigest()
+        sf = stats["seen_fingerprints"]
+        if pg_fingerprint in sf: # detected similar pg
+            return []
+        sf.add(pg_fingerprint)
+
+        # TODO: detect & avoid crawling very large files (esp if they hv low info value)
+
         # for finding num of unique pgs (remove fragment & add url to set)
         find_unique_pages(resp)
 
@@ -32,14 +46,12 @@ def scraper(url: str, resp: utils.response.Response) -> list:
         find_longest_page(url, resp)
 
         # for finding 50 most common words 
-        html = BeautifulSoup(resp.raw_response.content, "html.parser")
-        pg_text = html.get_text(separator=" ")
         update_word_counts(pg_text)
 
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
-def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
+def extract_next_links(url: str, resp: utils.response.Response) -> list:
     """ Extracts all hyperlinks from a page's HTML content and returns them as a list of strings.
         Args:
             url - the URL that was used to get the page
@@ -68,7 +80,7 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
         
     return hyperlinks
 
-def is_valid(url: str) -> bool: #kay
+def is_valid(url: str) -> bool:
     """Decides whether a URL should be crawled. Returns True if the URL is valid, False otherwise."""
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
@@ -119,12 +131,12 @@ def is_valid(url: str) -> bool: #kay
         print ("TypeError for ", parsed)
         raise
 
-def find_unique_pages(resp: utils.response.Response):
+def find_unique_pages(resp: utils.response.Response) -> None:
     # for finding num of unique pgs (remove fragment & add url to set)
     unfragmented_url = urldefrag(resp.url)[0]
     stats["unique_pgs"].add(unfragmented_url)
 
-def find_longest_page(url: str, resp: utils.response.Response):
+def find_longest_page(url: str, resp: utils.response.Response) -> None:
     # for finding longest pg word-wise (extract only text from html)
     html = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text = html.get_text(separator=" ") # split words by space for effective counting
@@ -132,7 +144,7 @@ def find_longest_page(url: str, resp: utils.response.Response):
     if num_words > stats["longest_page"][1]: 
         stats["longest_page"] = (resp.url, num_words)
 
-def tokenize(text: str):
+def tokenize(text: str) -> list:
     """Helper func for find_word_counts()"""
     # end --> end
     # (.word) --> word
@@ -140,7 +152,7 @@ def tokenize(text: str):
     # convert to lowercase & remove punctuation at front and end of word (word alr slit by space)
     return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)]
 
-def update_word_counts(text: str):
+def update_word_counts(text: str) -> None:
     tokens = tokenize(text)
     for token in tokens: 
         if token and token not in STOP_WORDS:
@@ -148,7 +160,7 @@ def update_word_counts(text: str):
 
 
 # NOTE: run these at the end once the crawler is done for the report
-def find_50_most_common_words():
+def find_50_most_common_words() -> list:
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
 def find_total_subdomains() -> list:
@@ -170,3 +182,4 @@ def find_total_subdomains() -> list:
 # Sources:
 # - https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
 # - https://docs.python.org/3/library/urllib.parse.html
+# - https://docs.python.org/3/library/hashlib.html
