@@ -3,6 +3,8 @@ from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from utils.response import Response
 
+print("scraper.py loaded")
+
 # dict to keep track of stat values
 stats = {
     "unique_pgs": set(),
