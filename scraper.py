@@ -1,4 +1,4 @@
-import re, string, hashlib
+import re, string
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from utils.response import Response
@@ -35,12 +35,9 @@ def scraper(url: str, resp: Response) -> list:
         html = BeautifulSoup(resp.raw_response.content, "html.parser")
         pg_text = html.get_text(separator=" ")
 
-        # detect & avoid sets of similar pgs w no info (exact duplicates) #TODO: need to check near-dupes too?
-        pg_fingerprint = hashlib.md5(pg_text.encode("utf-8")).hexdigest()
-        sf = stats["seen_fingerprints"]
-        if pg_fingerprint in sf: # detected similar pg
+        # detect & avoid sets of similar pgs w no info (pgs w barely any content)
+        if len(pg_text.split()) < 50: # defined threashold < 50 words
             return []
-        sf.add(pg_fingerprint)
 
         # TODO: detect & avoid crawling very large files (esp if they hv low info value)
 
@@ -110,8 +107,7 @@ def is_valid(url: str) -> bool:
             "ics.uci.edu",
             "cs.uci.edu",
             "informatics.uci.edu",
-            "stat.uci.edu",
-            "python.org"
+            "stat.uci.edu"
         ]
 
         # Check if the domain matches the allowed domains
