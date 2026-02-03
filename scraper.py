@@ -65,6 +65,7 @@ def extract_next_links(url: str, resp: Response) -> list:
 
     # check if response status isn't 200, raw_response doesn't exists, or content is empty
     if resp.status != 200 or not resp.raw_response or not resp.raw_response.content: 
+        print(f"Response check failed: status={resp.status}, has_response={resp.raw_response is not None}")
         return []
 
     # parse HTML
@@ -80,7 +81,8 @@ def extract_next_links(url: str, resp: Response) -> list:
             absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
             absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
             hyperlinks.append(absolute_url) # add normalized url to list
-        
+    
+    print(f"Extracted {len(hyperlinks)} links, valid: {[link for link in hyperlinks if is_valid(link)]}")
     return hyperlinks
 
 def is_valid(url: str) -> bool:
