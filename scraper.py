@@ -1,13 +1,15 @@
-import re, utils, string
+import re, string
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
+from utils.response import Response
 
 # dict to keep track of stat values
 stats = {
     "unique_pgs": set(),
     "longest_page": ("", 0), #(url, wordcount)
     "word_counts": {}, #{word: count}
-    "subdomains": {} #{subdomain: unqiuepages}
+    "subdomains": {}, #{subdomain: unqiuepages}
+    "seen_fingerprints": set()
 }
 
 # load stopwords once
@@ -17,29 +19,43 @@ def load_stopwords(path: str):
 STOP_WORDS = load_stopwords("stopwords.txt")
 
 
-def scraper(url: str, resp: utils.response.Response) -> list:
+def scraper(url: str, resp: Response) -> list:
     """
     url: the URL that was added to the frontier, and downloaded from the cache
         (type str and was an url that was previously added to the frontier)
     resp: response given by the caching server for the requested URL 
         (an object of type Response)
     """
+    print(f"Status: {resp.status}, Has content: {resp.raw_response is not None}")
+
     if resp.status == 200 and resp.raw_response and resp.raw_response.content:
+        # extract pg's text
+        html = BeautifulSoup(resp.raw_response.content, "html.parser")
+        pg_text = html.get_text(separator=" ")
+
+        # detect & avoid sets of similar pgs w no info (pgs w barely any content)
+        if len(pg_text.split()) < 50: # defined threashold < 50 words
+            return []
+
+        # detect & avoid crawling very large files esp if they hv low info value
+        MAX_FILE_SIZE = 1_000_000 # 1 MB
+        pg_content_length = resp.headers.get("Content-Length")
+        if (pg_content_length and int(pg_content_length) > MAX_FILE_SIZE) or len(resp.content) > MAX_FILE_SIZE:
+            return []
+
         # for finding num of unique pgs (remove fragment & add url to set)
         find_unique_pages(resp)
 
         # for finding longest pg word-wise (extract only text from html)
         find_longest_page(url, resp)
 
-        # for finding 50 most common words 
-        html = BeautifulSoup(resp.raw_response.content, "html.parser")
-        pg_text = html.get_text(separator=" ")
+        # for finding 50 most common words
         update_word_counts(pg_text)
 
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
-def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
+def extract_next_links(url: str, resp: Response) -> list:
     """ Extracts all hyperlinks from a page's HTML content and returns them as a list of strings.
         Args:
             url - the URL that was used to get the page
@@ -50,6 +66,7 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
 
     # check if response status isn't 200, raw_response doesn't exists, or content is empty
     if resp.status != 200 or not resp.raw_response or not resp.raw_response.content: 
+        print(f"Response check failed: status={resp.status}, has_response={resp.raw_response is not None}")
         return []
 
     # parse HTML
@@ -59,13 +76,14 @@ def extract_next_links(url: str, resp: utils.response.Response) -> list: #emily
     for hyperlink in html.find_all('a'):
         link = hyperlink.get('href')
         if link: # prevents empty links
-            link = link.strip() # get rid of unecessary white space
+            link = link.strip() # get rid of uncessary white space
             
             # Normalize URLs (so that every href str is following same url format)
             absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
             absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
             hyperlinks.append(absolute_url) # add normalized url to list
-        
+
+    print(f"Extracted {len(hyperlinks)} links, valid: {[link for link in hyperlinks if is_valid(link)]}")
     return hyperlinks
 
 def is_valid(url: str) -> bool: #kay
@@ -102,17 +120,20 @@ def is_valid(url: str) -> bool: #kay
         if not any (parsed.hostname.endswith(domain) for domain in allowed_domains):
             return False
 
-        # Check for bad files
+        # Check for bad files (#TODO: may be more)
         if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|txt" # added txt
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
+
+        # TODO: Check for traps
+
 
         return True
 
@@ -180,7 +201,7 @@ def find_total_subdomains() -> list:
         Groups unique pages by their subdomain.
         Returns: a list of tuples sorted alphabetically
     """
-    # for finding num of subdomains 
+    # for finding num of subdomains
     unique_pgs = stats["unique_pgs"]
     for url in unique_pgs:
         parsed_url = urlparse(url)
@@ -198,3 +219,4 @@ def find_total_subdomains() -> list:
 # Sources:
 # - https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
 # - https://docs.python.org/3/library/urllib.parse.html
+# - https://docs.python.org/3/library/hashlib.html
