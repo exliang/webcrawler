@@ -137,7 +137,7 @@ def is_valid(url: str) -> bool: #kay
             return False
         
         # Check for infinite traps (#TODO: delete this to see what traps run into)
-        if re.search(r'/events/(today|week|month)(/|$)', parsed.path.lower()): # calendar/event pattern
+        if "/events/" in parsed.path.lower(): # calendar/event pattern 
             return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
             return False
