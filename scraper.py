@@ -84,7 +84,10 @@ def extract_next_links(url: str, resp: Response) -> list:
             absolute_url = absolute_url.lower() # make all lowercase for effective matching
             hyperlinks.append(absolute_url) # add normalized url to list
     
-    print(f"Extracted {len(hyperlinks)} links, valid: {[link for link in hyperlinks if is_valid(link)]}")
+    print(f"Extracted {len(hyperlinks)} links, valid: ")
+    for link in [link for link in hyperlinks if is_valid(link)]:
+        print(link)
+        
     return hyperlinks
 
 def is_valid(url: str) -> bool:
@@ -129,7 +132,7 @@ def is_valid(url: str) -> bool:
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
         
-        # Check for infinite traps
+        # Check for infinite traps (#TODO: delete this to see what traps run into)
         if re.search(r'/events/(today|week|month)(/|$)', parsed): # calendar/event pattern
             return False
         if len(parsed) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
