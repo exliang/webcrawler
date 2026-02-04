@@ -27,7 +27,7 @@ def scraper(url: str, resp: Response) -> list:
         (an object of type Response)
     """
     print(f"Status: {resp.status}, Has content: {resp.raw_response is not None}")
-    
+
     if resp.status == 200 and resp.raw_response and resp.raw_response.content:
         # extract pg's text
         html = BeautifulSoup(resp.raw_response.content, "html.parser")
@@ -90,8 +90,12 @@ def extract_next_links(url: str, resp: Response) -> list:
         
     return hyperlinks
 
-def is_valid(url: str) -> bool:
-    """Decides whether a URL should be crawled. Returns True if the URL is valid, False otherwise."""
+def is_valid(url: str) -> bool: #kay
+    """ Decides whether a URL should be crawled. Returns True if the URL is valid, False otherwise.
+        Args:
+            url - the URL to validate
+        Returns: bool - True whether if URL should be crawled, False if otherwise
+    """
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
@@ -137,7 +141,7 @@ def is_valid(url: str) -> bool:
             return False
         if len(parsed) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
             return False
-        if any(param in parsed for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params 
+        if any(param in parsed for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params
             return False
         if 'tribe__ecp_custom' in parsed: # repeated query params
             return False
@@ -150,12 +154,22 @@ def is_valid(url: str) -> bool:
         print ("TypeError for ", parsed)
         raise
 
-def find_unique_pages(resp: Response) -> None:
+def find_unique_pages(resp: utils.response.Response):
+    """ Finds and tracks unique pages. Duplicate URLs are ignored.
+        Args:
+            resp - response from server
+    """
     # for finding num of unique pgs (remove fragment & add url to set)
     unfragmented_url = urldefrag(resp.url)[0]
     stats["unique_pgs"].add(unfragmented_url)
 
-def find_longest_page(url: str, resp: Response) -> None:
+def find_longest_page(url: str, resp: utils.response.Response):
+    """ Finds the longest page based on word count.
+        Compares the current page count to the current longest page count.
+        Arg:
+            url - the URL of the page
+            resp - the response from server
+    """
     # for finding longest pg word-wise (extract only text from html)
     html = BeautifulSoup(resp.raw_response.content, 'html.parser')
     text = html.get_text(separator=" ") # split words by space for effective counting
@@ -163,15 +177,24 @@ def find_longest_page(url: str, resp: Response) -> None:
     if num_words > stats["longest_page"][1]: 
         stats["longest_page"] = (resp.url, num_words)
 
-def tokenize(text: str) -> list:
-    """Helper func for find_word_counts()"""
+def tokenize(text: str):
+    """Helper func for update_word_counts()
+    Turns the raw text into a list of lowercase words and removes punctuation.
+        Arg:
+            text - the raw text taken from the HTML page
+        Returns: a list of lowercase words
+    """
     # end --> end
     # (.word) --> word
     # don't --> don't (keep punc in the middle of the word)
     # convert to lowercase & remove punctuation at front and end of word (word alr slit by space)
     return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)]
 
-def update_word_counts(text: str) -> None:
+def update_word_counts(text: str):
+    """ Updates the word count for each word on the page.
+        Arg:
+            text - the raw text taken from the HTML page
+    """
     tokens = tokenize(text)
     for token in tokens: 
         if token and token not in STOP_WORDS:
@@ -179,11 +202,19 @@ def update_word_counts(text: str) -> None:
 
 
 # NOTE: run these at the end once the crawler is done for the report
-def find_50_most_common_words() -> list:
+def find_50_most_common_words():
+    """ Finds 50 most common words from all the pages crawled.
+        Returns: list of tuples sorted by count
+    """
+    # returns
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
 
 def find_total_subdomains() -> list:
-    # for finding num of subdomains 
+    """ Finds all subdomains and counts how many unique pages are found.
+        Groups unique pages by their subdomain.
+        Returns: a list of tuples sorted alphabetically
+    """
+    # for finding num of subdomains
     unique_pgs = stats["unique_pgs"]
     for url in unique_pgs:
         parsed_url = urlparse(url)
