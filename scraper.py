@@ -96,10 +96,6 @@ def is_valid(url: str) -> bool: #kay
             url - the URL to validate
         Returns: bool - True whether if URL should be crawled, False if otherwise
     """
-    # Decide whether to crawl this url or not. 
-    # If you decide to crawl it, return True; otherwise return False.
-    # There are already some conditions that return False.
-    # NOTE: returns only URLs that are within the domains and paths mentioned in assignment
     # (ex: https://www.ics.uci.edu/ & https://ics.uci.edu/ both valid)
     try:
         parsed = urlparse(url)
@@ -136,14 +132,14 @@ def is_valid(url: str) -> bool: #kay
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
         
-        # Check for infinite traps (#TODO: delete this to see what traps run into)
+        # Check for infinite traps & low value/repetitive pages
         if "/events/" in parsed.path.lower(): # calendar/event pattern 
             return False
         if any(param in parsed.query.lower() for param in ['do=', 'idx=', 'id=']): # low info value pgs
             return False
         if 'requesttracker' in parsed.query.lower(): # repeated query params
             return False
-        if len(url) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
+        if len(url) > 200: # very long URLs (defined threashold > 200 chars)
             return False
         if url.count('?') > 1 or url.count('&') > 4: # lots of ? or &
             return False
