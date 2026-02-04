@@ -154,7 +154,7 @@ def is_valid(url: str) -> bool: #kay
         print ("TypeError for ", parsed)
         raise
 
-def find_unique_pages(resp: utils.response.Response):
+def find_unique_pages(resp: Response):
     """ Finds and tracks unique pages. Duplicate URLs are ignored.
         Args:
             resp - response from server
@@ -163,7 +163,7 @@ def find_unique_pages(resp: utils.response.Response):
     unfragmented_url = urldefrag(resp.url)[0]
     stats["unique_pgs"].add(unfragmented_url)
 
-def find_longest_page(url: str, resp: utils.response.Response):
+def find_longest_page(url: str, resp: Response):
     """ Finds the longest page based on word count.
         Compares the current page count to the current longest page count.
         Arg:
