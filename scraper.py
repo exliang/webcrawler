@@ -49,7 +49,7 @@ def scraper(url: str, resp: Response) -> list:
         # for finding longest pg word-wise (extract only text from html)
         find_longest_page(url, resp)
 
-        # for finding 50 most common words
+        # for finding 50 most common words 
         update_word_counts(pg_text)
 
     links = extract_next_links(url, resp)
@@ -81,8 +81,9 @@ def extract_next_links(url: str, resp: Response) -> list:
             # Normalize URLs (so that every href str is following same url format)
             absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
             absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
+            absolute_url = absolute_url.lower() # make all lowercase for effective matching
             hyperlinks.append(absolute_url) # add normalized url to list
-
+    
     print(f"Extracted {len(hyperlinks)} links, valid: {[link for link in hyperlinks if is_valid(link)]}")
     return hyperlinks
 
@@ -131,9 +132,18 @@ def is_valid(url: str) -> bool: #kay
             + r"|thmx|mso|arff|rtf|jar|csv"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
-
-        # TODO: Check for traps
-
+        
+        # Check for infinite traps
+        if re.search(r'/events/(today|week|month)(/|$)', parsed): # calendar/event pattern
+            return False
+        if len(parsed) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
+            return False
+        if any(param in parsed for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params
+            return False
+        if 'tribe__ecp_custom' in parsed: # repeated query params
+            return False
+        if parsed.count('?') > 1 or parsed.count('&') > 4: # lots of ? or &
+            return False
 
         return True
 
