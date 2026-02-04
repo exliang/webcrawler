@@ -137,15 +137,15 @@ def is_valid(url: str) -> bool: #kay
             return False
         
         # Check for infinite traps (#TODO: delete this to see what traps run into)
-        if re.search(r'/events/(today|week|month)(/|$)', parsed): # calendar/event pattern
+        if re.search(r'/events/(today|week|month)(/|$)', parsed.path.lower()): # calendar/event pattern
             return False
-        if len(parsed) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
+        if len(url) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
             return False
-        if any(param in parsed for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params
+        if any(param in parsed.query().lower() for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params
             return False
-        if 'tribe__ecp_custom' in parsed: # repeated query params
+        if 'tribe__ecp_custom' in parsed.query.lower(): # repeated query params
             return False
-        if parsed.count('?') > 1 or parsed.count('&') > 4: # lots of ? or &
+        if url.count('?') > 1 or url.count('&') > 4: # lots of ? or &
             return False
 
         return True
