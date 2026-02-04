@@ -139,7 +139,7 @@ def is_valid(url: str) -> bool: #kay
         # Check for infinite traps (#TODO: delete this to see what traps run into)
         if "/events/" in parsed.path.lower(): # calendar/event pattern 
             return False
-        if any(param in parsed.query.lower() for param in ['do=', 'idx=']): # low info value pgs
+        if any(param in parsed.query.lower() for param in ['do=', 'idx=', 'id=']): # low info value pgs
             return False
         if 'requesttracker' in parsed.query.lower(): # repeated query params
             return False
