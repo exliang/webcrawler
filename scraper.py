@@ -141,8 +141,8 @@ def is_valid(url: str) -> bool: #kay
             return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars) #TODO: keep testing see if 200 is good (found 162)
             return False
-        if any(param in parsed.query().lower() for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params
-            return False
+        # if any(param in parsed.query().lower() for param in ['sessionid=', 'sid=', 'utm_', 'ref=']): # session IDs/tracking params
+        #     return False
         if 'tribe__ecp_custom' in parsed.query.lower(): # repeated query params
             return False
         if url.count('?') > 1 or url.count('&') > 4: # lots of ? or &
