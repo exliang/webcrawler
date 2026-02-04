@@ -40,7 +40,7 @@ def scraper(url: str, resp: Response) -> list:
         # detect & avoid crawling very large files esp if they hv low info value
         MAX_FILE_SIZE = 1_000_000 # 1 MB
         pg_content_length = resp.raw_response.headers.get("Content-Length")
-        if (pg_content_length and int(pg_content_length) > MAX_FILE_SIZE) or len(resp.content) > MAX_FILE_SIZE:
+        if (pg_content_length and int(pg_content_length) > MAX_FILE_SIZE) or len(resp.raw_response.content) > MAX_FILE_SIZE:
             return []
 
         # for finding num of unique pgs (remove fragment & add url to set)
