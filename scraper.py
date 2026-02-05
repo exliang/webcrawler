@@ -77,12 +77,19 @@ def extract_next_links(url: str, resp: Response) -> list:
         link = hyperlink.get('href')
         if link: # prevents empty links
             link = link.strip() # get rid of uncessary white space
+
+            # skip malformed/broken URLs
+            if not link or "YOUR_IP" in link: #avoid valuerror
+                continue
             
-            # Normalize URLs (so that every href str is following same url format)
-            absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
-            absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
-            absolute_url = absolute_url.lower() # make all lowercase for effective matching
-            hyperlinks.append(absolute_url) # add normalized url to list
+            try:
+                # Normalize URLs (so that every href str is following same url format)
+                absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
+                absolute_url = urldefrag(absolute_url)[0] # remove fragment from link
+                absolute_url = absolute_url.lower() # make all lowercase for effective matching
+                hyperlinks.append(absolute_url) # add normalized url to list
+            except Exception: # catch & skip malformed URLs
+                continue 
     
     print(f"Extracted {len(hyperlinks)} links, valid: ")
     for link in [link for link in hyperlinks if is_valid(link)]:
@@ -136,9 +143,9 @@ def is_valid(url: str) -> bool: #kay
         parsed_query = parsed.query.lower()
         if "/events/" in parsed.path.lower(): # calendar/event pattern 
             return False
-        if any(param in parsed_query for param in ['do=', 'idx=', 'id=']): # low info value pgs
+        if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=']): # low info value pgs
             return False
-        if 'requesttracker' in parsed_query or 'version=' in parsed_query: # repeated query params, giving barely any new info
+        if 'requesttracker'in parsed_query: # repeated query params, giving barely any new info
             return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars)
             return False
