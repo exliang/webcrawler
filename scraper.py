@@ -133,11 +133,12 @@ def is_valid(url: str) -> bool: #kay
             return False
         
         # Check for infinite traps & low value/repetitive pages
+        parsed_query = parsed.query.lower()
         if "/events/" in parsed.path.lower(): # calendar/event pattern 
             return False
-        if any(param in parsed.query.lower() for param in ['do=', 'idx=', 'id=']): # low info value pgs
+        if any(param in parsed_query for param in ['do=', 'idx=', 'id=']): # low info value pgs
             return False
-        if 'requesttracker' in parsed.query.lower(): # repeated query params
+        if 'requesttracker' in parsed_query or 'version=' in parsed_query: # repeated query params, giving barely any new info
             return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars)
             return False
@@ -219,10 +220,10 @@ def find_total_subdomains() -> list:
             stats["subdomains"][domain] = stats["subdomains"].get(domain, 0) + 1
     return sorted(stats["subdomains"].items())
 
-# print(len(stats["unique_pgs"]))
-# print(stats["longest_page"][0])
-# print(find_50_most_common_words())
-# print(find_total_subdomains())) #only call once or counts will accumulate
+print(len(stats["unique_pgs"]))
+print(stats["longest_page"][0])
+print(find_50_most_common_words())
+print(find_total_subdomains()) #only call once or counts will accumulate
 
 
 # Sources:
