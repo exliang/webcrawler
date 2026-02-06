@@ -30,7 +30,7 @@ def scraper(url: str, resp: Response) -> list:
 
     if resp.status == 200 and resp.raw_response and resp.raw_response.content:
         # extract pg's text
-        html = BeautifulSoup(resp.raw_response.content, "html.parser")
+        html = BeautifulSoup(resp.raw_response.content, "html.parser", from_encoding='utf-8') # encoding to handle char encoding errors
         pg_text = html.get_text(separator=" ")
 
         # detect & avoid sets of similar pgs w no info (pgs w barely any content)
@@ -130,7 +130,7 @@ def is_valid(url: str) -> bool: #kay
         # Check for bad files (#TODO: may be more)
         if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
+            + r"|png|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|txt" # added txt
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
