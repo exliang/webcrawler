@@ -124,7 +124,7 @@ def is_valid(url: str) -> bool: #kay
         ]
 
         # Check if the domain matches the allowed domains
-        if not any (parsed.hostname.lower() == domain or parsed.hostname.lower().endswith("." + domain) for domain in allowed_domains):
+        if not any (parsed.hostname == domain or parsed.hostname.endswith("." + domain) for domain in allowed_domains):
             return False
 
         # Check for bad files (#TODO: may be more)
