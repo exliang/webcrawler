@@ -81,7 +81,7 @@ def extract_next_links(url: str, resp: Response) -> list:
             # skip malformed/broken URLs
             if not link or "YOUR_IP" in link: #avoid valuerror
                 continue
-            
+
             try:
                 # Normalize URLs (so that every href str is following same url format)
                 absolute_url = urljoin(resp.url, link) # join relative URLs to base URL
@@ -145,7 +145,7 @@ def is_valid(url: str) -> bool: #kay
             return False
         if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=']): # low info value pgs
             return False
-        if 'requesttracker'in parsed_query: # repeated query params, giving barely any new info
+        if 'requesttracker' in parsed_query: # repeated query params, giving barely any new info
             return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars)
             return False
