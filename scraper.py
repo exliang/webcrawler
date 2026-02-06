@@ -124,7 +124,7 @@ def is_valid(url: str) -> bool: #kay
         ]
 
         # Check if the domain matches the allowed domains
-        if not any (parsed.hostname.endswith(domain) for domain in allowed_domains):
+        if not any (parsed.hostname.lower() == domain or parsed.hostname.lower().endswith("." + domain) for domain in allowed_domains):
             return False
 
         # Check for bad files (#TODO: may be more)
@@ -143,7 +143,7 @@ def is_valid(url: str) -> bool: #kay
         parsed_query = parsed.query.lower()
         if "/events/" in parsed.path.lower(): # calendar/event pattern 
             return False
-        if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=']): # low info value pgs
+        if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=', 'rev=']): # low info value & near-dupe pgs
             return False
         if 'requesttracker' in parsed_query: # repeated query params, giving barely any new info
             return False
