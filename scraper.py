@@ -242,7 +242,7 @@ print(find_50_most_common_words())
 print(find_total_subdomains()) #only call once or counts will accumulate
 
 
-# Sources:
+# Documentation:
 # - https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
 # - https://docs.python.org/3/library/urllib.parse.html
 # - https://docs.python.org/3/library/hashlib.html
