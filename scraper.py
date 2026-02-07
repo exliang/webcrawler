@@ -132,7 +132,7 @@ def is_valid(url: str) -> bool: #kay
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|txt" # added txt
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|ppsx" # added ppsx
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
@@ -141,11 +141,20 @@ def is_valid(url: str) -> bool: #kay
         
         # Check for infinite traps & low value/repetitive pages
         parsed_query = parsed.query.lower()
-        if "/events/" in parsed.path.lower(): # calendar/event pattern 
+        calendar_pattern = re.compile(r"/(fall|spring|winter|summer)-\d{4}-week-\d+") # ex: fall-2025-week-3
+        date_pattern = re.compile(r"/\d{4}([/-]\d{2}){2}$") # ex: 2025-2-06
+        numerical_pattern = re.compile(r"/[a-z]+\d+\.html$") # ex: r25.html
+
+        if "/events/" in parsed.path.lower() or calendar_pattern.search(parsed.path.lower()) \
+            or date_pattern.search(parsed.path.lower()) or parsed.path.lower().endswith("week"): # calendar/event/date pattern 
+            return False
+        if numerical_pattern.search(parsed.path.lower()): # numerical trap 
             return False
         if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=', 'rev=']): # low info value & near-dupe pgs
             return False
-        if 'requesttracker' in parsed_query: # repeated query params, giving barely any new info
+        if 'requesttracker' in parsed_query or "/page/" in parsed.path.lower(): # repeated query params, giving barely any new info
+            return False
+        if '/ml/datasets' in parsed_query or 'datasets' in parsed_query: # filter out large ML datasets
             return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars)
             return False
