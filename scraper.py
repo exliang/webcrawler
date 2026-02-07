@@ -127,9 +127,9 @@ def is_valid(url: str) -> bool: #kay
         # Check for bad files (may be more)
         if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg
+            + r"|png|img|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg, img
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|txt" # added txt
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|ppsx" # added ppsx
+            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|ppsx|pps" # added ppsx, pps
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
@@ -209,7 +209,8 @@ def update_word_counts(text: str):
     """
     tokens = tokenize(text)
     for token in tokens: 
-        if token and token not in STOP_WORDS and not token.isnumeric(): # exclude numbers
+        token = token.strip()
+        if token and len(token) > 1 and any(c.isalpha() for c in token) and token not in STOP_WORDS and not token.isnumeric(): # exclude numbers, char != word, no spaces, no special chars
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
 
