@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
+import scraper
 
 
 def main(config_file, restart):
@@ -13,6 +14,9 @@ def main(config_file, restart):
     config.cache_server = get_cache_server(config, restart)
     crawler = Crawler(config, restart)
     crawler.start()
+    # save stats to json file & print it at end of crawl
+    scraper.save_stats_to_file("stats.json")
+    print("Final stats saved to stats.json")
 
 
 if __name__ == "__main__":

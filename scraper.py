@@ -1,4 +1,4 @@
-import re, string
+import re, string, json, os
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from utils.response import Response
@@ -9,7 +9,6 @@ stats = {
     "longest_page": ("", 0), #(url, wordcount)
     "word_counts": {}, #{word: count}
     "subdomains": {}, #{subdomain: unqiuepages}
-    "seen_fingerprints": set()
 }
 
 # load stopwords once
@@ -17,7 +16,6 @@ def load_stopwords(path: str):
     with open(path, "r", encoding="utf-8") as file:
         return {word.strip() for word in file}
 STOP_WORDS = load_stopwords("stopwords.txt")
-
 
 def scraper(url: str, resp: Response) -> list:
     """
@@ -39,18 +37,18 @@ def scraper(url: str, resp: Response) -> list:
 
         # detect & avoid crawling very large files esp if they hv low info value
         MAX_FILE_SIZE = 1_000_000 # 1 MB
-        pg_content_length = resp.raw_response.headers.get("Content-Length")
-        if (pg_content_length and int(pg_content_length) > MAX_FILE_SIZE) or len(resp.raw_response.content) > MAX_FILE_SIZE:
+        if len(resp.raw_response.content) > MAX_FILE_SIZE: # comparing size in bytes
             return []
 
-        # for finding num of unique pgs (remove fragment & add url to set)
-        find_unique_pages(resp)
+        if is_valid(url): # only valid URLs for report
+            # for finding num of unique pgs (remove fragment & add url to set)
+            find_unique_pages(resp)
 
-        # for finding longest pg word-wise (extract only text from html)
-        find_longest_page(url, resp)
+            # for finding longest pg word-wise (extract only text from html)
+            find_longest_page(resp)
 
-        # for finding 50 most common words 
-        update_word_counts(pg_text)
+            # for finding 50 most common words 
+            update_word_counts(pg_text)
 
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -103,7 +101,6 @@ def is_valid(url: str) -> bool: #kay
             url - the URL to validate
         Returns: bool - True whether if URL should be crawled, False if otherwise
     """
-    # (ex: https://www.ics.uci.edu/ & https://ics.uci.edu/ both valid)
     try:
         parsed = urlparse(url)
 
@@ -127,7 +124,7 @@ def is_valid(url: str) -> bool: #kay
         if not any (parsed.hostname == domain or parsed.hostname.endswith("." + domain) for domain in allowed_domains):
             return False
 
-        # Check for bad files (#TODO: may be more)
+        # Check for bad files (may be more)
         if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg
@@ -142,11 +139,13 @@ def is_valid(url: str) -> bool: #kay
         # Check for infinite traps & low value/repetitive pages
         parsed_query = parsed.query.lower()
         calendar_pattern = re.compile(r"/(fall|spring|winter|summer)-\d{4}-week-\d+") # ex: fall-2025-week-3
+        quarter_pattern = re.compile(r"/(fall|spring|winter|summer)-quarter-week-\d+") # ex: fall-quarter-week-3
         date_pattern = re.compile(r"/\d{4}([/-]\d{2}){2}$") # ex: 2025-2-06
         numerical_pattern = re.compile(r"/[a-z]+\d+\.html$") # ex: r25.html
 
-        if "/events/" in parsed.path.lower() or calendar_pattern.search(parsed.path.lower()) \
-            or date_pattern.search(parsed.path.lower()) or parsed.path.lower().endswith("week"): # calendar/event/date pattern 
+        if "/events/" in parsed.path.lower() or "/event/" in parsed.path.lower() or calendar_pattern.search(parsed.path.lower()) \
+            or date_pattern.search(parsed.path.lower()) or quarter_pattern.search(parsed.path.lower()) \
+            or parsed.path.lower().endswith("week"): # calendar/event/date pattern 
             return False
         if numerical_pattern.search(parsed.path.lower()): # numerical trap 
             return False
@@ -168,15 +167,15 @@ def is_valid(url: str) -> bool: #kay
         raise
 
 def find_unique_pages(resp: Response):
-    """ Finds and tracks unique pages. Duplicate URLs are ignored.
+    """ Finds and tracks unique valid pages. Duplicate URLs are ignored.
         Args:
             resp - response from server
     """
     # for finding num of unique pgs (remove fragment & add url to set)
-    unfragmented_url = urldefrag(resp.url)[0]
+    unfragmented_url = urldefrag(resp.url)[0].lower().rstrip("/") # lowercase & remove trailing slash
     stats["unique_pgs"].add(unfragmented_url)
 
-def find_longest_page(url: str, resp: Response):
+def find_longest_page(resp: Response):
     """ Finds the longest page based on word count.
         Compares the current page count to the current longest page count.
         Arg:
@@ -201,7 +200,7 @@ def tokenize(text: str):
     # (.word) --> word
     # don't --> don't (keep punc in the middle of the word)
     # convert to lowercase & remove punctuation at front and end of word (word alr slit by space)
-    return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)]
+    return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)] # filter out empty strs
 
 def update_word_counts(text: str):
     """ Updates the word count for each word on the page.
@@ -210,7 +209,7 @@ def update_word_counts(text: str):
     """
     tokens = tokenize(text)
     for token in tokens: 
-        if token and token not in STOP_WORDS:
+        if token and token not in STOP_WORDS and not token.isnumeric(): # exclude numbers
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
 
@@ -220,7 +219,7 @@ def find_50_most_common_words():
         Returns: list of tuples sorted by count
     """
     # returns
-    return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)
+    return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)[:50]
 
 def find_total_subdomains() -> list:
     """ Finds all subdomains and counts how many unique pages are found.
@@ -236,10 +235,21 @@ def find_total_subdomains() -> list:
             stats["subdomains"][domain] = stats["subdomains"].get(domain, 0) + 1
     return sorted(stats["subdomains"].items())
 
-print(len(stats["unique_pgs"]))
-print(stats["longest_page"][0])
-print(find_50_most_common_words())
-print(find_total_subdomains()) #only call once or counts will accumulate
+def save_stats_to_file(path="stats.json"):
+    stats_to_save = {
+        "unique_pgs": list(stats["unique_pgs"]),
+        "longest_page": stats["longest_page"],
+        "word_counts": stats["word_counts"],
+        "subdomains": stats["subdomains"]
+    }
+
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(stats_to_save, file, ensure_ascii=False, indent=4)
+
+# print(len(stats["unique_pgs"]))
+# print(stats["longest_page"][0])
+# print(find_50_most_common_words())
+# print(find_total_subdomains()) #only call once or counts will accumulate
 
 
 # Documentation:
