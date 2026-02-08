@@ -107,6 +107,10 @@ def is_valid(url: str) -> bool: #kay
         # Valid for only http/https
         if parsed.scheme not in set(["http", "https"]):
             return False
+        
+        # if http or https appears twice --> malformed URL
+        if parsed.path.count("http") > 0 or parsed.path.count("https") > 0:
+            return False
 
         # Use hostname for domain
         if not parsed.hostname:
