@@ -50,8 +50,8 @@ def scraper(url: str, resp: Response) -> list:
             # for finding 50 most common words 
             update_word_counts(pg_text)
 
-    links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+        links = extract_next_links(url, resp)
+        return [link for link in links if is_valid(link)]
 
 def extract_next_links(url: str, resp: Response) -> list:
     """ Extracts all hyperlinks from a page's HTML content and returns them as a list of strings.
@@ -64,7 +64,6 @@ def extract_next_links(url: str, resp: Response) -> list:
 
     # check if response status isn't 200, raw_response doesn't exists, or content is empty
     if resp.status != 200 or not resp.raw_response or not resp.raw_response.content: 
-        print(f"Response check failed: status={resp.status}, has_response={resp.raw_response is not None}")
         return []
 
     # parse HTML
@@ -151,11 +150,13 @@ def is_valid(url: str) -> bool: #kay
             or date_pattern.search(parsed.path.lower()) or quarter_pattern.search(parsed.path.lower()) \
             or parsed.path.lower().endswith("week"): # calendar/event/date pattern 
             return False
+        if "grape" in parsed.hostname: # grape.ics.uci.edu ton of low-value repetitive content
+            return False
         if numerical_pattern.search(parsed.path.lower()): # numerical trap 
             return False
         if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=', 'rev=']): # low info value & near-dupe pgs
             return False
-        if 'requesttracker' in parsed_query or "/page/" in parsed.path.lower(): # repeated query params, giving barely any new info
+        if 'requesttracker' in parsed_query or "/page/" in parsed.path.lower() or "junkyard" in parsed.path.lower(): # repeated query params, giving barely any new info
             return False
         if '/ml/datasets' in parsed_query or 'datasets' in parsed_query: # filter out large ML datasets
             return False
