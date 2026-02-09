@@ -160,6 +160,10 @@ def is_valid(url: str) -> bool: #kay
             return False
         if '/ml/datasets' in parsed_query or 'datasets' in parsed_query: # filter out large ML datasets
             return False
+        if "/pub/" in parsed.path.lower() or "publications" in parsed.path.lower(): # low textual content
+            return False
+        if "~dechter/" in parsed.path.lower(): # pg not found and/or low value
+            return False
         if len(url) > 200: # very long URLs (defined threashold > 200 chars)
             return False
         if url.count('?') > 1 or url.count('&') > 4: # lots of ? or &
