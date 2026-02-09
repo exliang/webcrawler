@@ -52,6 +52,9 @@ def scraper(url: str, resp: Response) -> list:
 
         links = extract_next_links(url, resp)
         return [link for link in links if is_valid(link)]
+    
+    # handle cases where status code isn't 200, no content/responswe
+    return []
 
 def extract_next_links(url: str, resp: Response) -> list:
     """ Extracts all hyperlinks from a page's HTML content and returns them as a list of strings.
