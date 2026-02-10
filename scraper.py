@@ -132,13 +132,13 @@ def is_valid(url: str) -> bool: #kay
 
         # Check for bad files (may be more)
         if re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
+            r".*\.(css|js|bmp|gif|jpe?g|jpg|ico" #added jpg
             + r"|png|img|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg, img
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|txt" # added txt
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|ppsx|pps" # added ppsx, pps
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
+            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso|bib" # added bib
+            + r"|epub|dll|cnf|tgz|sha1|webp|sql" # added webp, sql
+            + r"|thmx|mso|arff|rtf|jar|csv|tsv|sh|war|c|cpp|h|java|py|php|rss" # added tsv, sh, war, c cpp h java py php rss (code files)
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
         
@@ -153,11 +153,11 @@ def is_valid(url: str) -> bool: #kay
             or date_pattern.search(parsed.path.lower()) or quarter_pattern.search(parsed.path.lower()) \
             or parsed.path.lower().endswith("week"): # calendar/event/date pattern 
             return False
-        if "grape" in parsed.hostname: # grape.ics.uci.edu ton of low-value repetitive content
+        if "grape" in parsed.hostname: # ton of low-value repetitive content
             return False
         if numerical_pattern.search(parsed.path.lower()): # numerical trap 
             return False
-        if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=', 'rev=']): # low info value & near-dupe pgs
+        if any(param in parsed_query for param in ['do=', 'idx=', 'id=', 'version=', 'from=', 'precision=', 'rev=', 'p=']): # low info value & near-dupe pgs
             return False
         if 'requesttracker' in parsed_query or "/page/" in parsed.path.lower() or "junkyard" in parsed.path.lower(): # repeated query params, giving barely any new info
             return False
