@@ -14,9 +14,7 @@ def main(config_file, restart):
     config.cache_server = get_cache_server(config, restart)
     crawler = Crawler(config, restart)
     crawler.start()
-    # save stats to json file & print it at end of crawl
-    scraper.save_stats_to_file("stats.json")
-    print("Final stats saved to stats.json")
+    scraper.save_stats_to_file("stats.json")  # save stats to json file
 
 
 if __name__ == "__main__":

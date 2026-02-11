@@ -1,4 +1,4 @@
-import re, string, json, os
+import re, string, json
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from utils.response import Response
@@ -24,8 +24,6 @@ def scraper(url: str, resp: Response) -> list:
     resp: response given by the caching server for the requested URL 
         (an object of type Response)
     """
-    print(f"Status: {resp.status}, Has content: {resp.raw_response is not None}")
-
     if resp.status == 200 and resp.raw_response and resp.raw_response.content:
         # extract pg's text
         html = BeautifulSoup(resp.raw_response.content, "html.parser", from_encoding='utf-8') # encoding to handle char encoding errors
@@ -90,14 +88,10 @@ def extract_next_links(url: str, resp: Response) -> list:
                 hyperlinks.append(absolute_url) # add normalized url to list
             except Exception: # catch & skip malformed URLs
                 continue 
-    
-    print(f"Extracted {len(hyperlinks)} links, valid: ")
-    for link in [link for link in hyperlinks if is_valid(link)]:
-        print(link)
         
     return hyperlinks
 
-def is_valid(url: str) -> bool: #kay
+def is_valid(url: str) -> bool:
     """ Decides whether a URL should be crawled. Returns True if the URL is valid, False otherwise.
         Args:
             url - the URL to validate
@@ -163,7 +157,7 @@ def is_valid(url: str) -> bool: #kay
             return False
         if '/ml/datasets' in parsed_query or 'datasets' in parsed_query: # filter out large ML datasets
             return False
-        if "/pub/" in parsed.path.lower() or "publications" in parsed.path.lower(): # low textual content
+        if "/pub/" in parsed.path.lower() or "publications" in parsed.path.lower() or "/pubs/" in parsed.path.lower(): # low textual content
             return False
         if "~dechter/" in parsed.path.lower(): # pg not found and/or low value
             return False
@@ -178,6 +172,7 @@ def is_valid(url: str) -> bool: #kay
         print ("TypeError for ", parsed)
         raise
 
+# Functions for getting the report stats
 def find_unique_pages(resp: Response):
     """ Finds and tracks unique valid pages. Duplicate URLs are ignored.
         Args:
@@ -211,7 +206,7 @@ def tokenize(text: str):
     # end --> end
     # (.word) --> word
     # don't --> don't (keep punc in the middle of the word)
-    # convert to lowercase & remove punctuation at front and end of word (word alr slit by space)
+    # convert to lowercase & remove punctuation at front and end of word (word alr split by space)
     return [word.lower().strip(string.punctuation) for word in text.split() if word.strip(string.punctuation)] # filter out empty strs
 
 def update_word_counts(text: str):
@@ -225,13 +220,10 @@ def update_word_counts(text: str):
         if token and len(token) > 1 and any(c.isalpha() for c in token) and token not in STOP_WORDS and not token.isnumeric(): # exclude numbers, char != word, no spaces, no special chars
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
-
-# NOTE: run these at the end once the crawler is done for the report
 def find_50_most_common_words():
     """ Finds 50 most common words from all the pages crawled.
         Returns: list of tuples sorted by count
     """
-    # returns
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)[:50]
 
 def find_total_subdomains() -> list:
@@ -249,6 +241,7 @@ def find_total_subdomains() -> list:
     return sorted(stats["subdomains"].items())
 
 def save_stats_to_file(path="stats.json"):
+    """Saves stats gathered from crawl to stats.json"""
     stats_to_save = {
         "unique_pgs": list(stats["unique_pgs"]),
         "longest_page": stats["longest_page"],
@@ -258,11 +251,6 @@ def save_stats_to_file(path="stats.json"):
 
     with open(path, "w", encoding="utf-8") as file:
         json.dump(stats_to_save, file, ensure_ascii=False, indent=4)
-
-# print(len(stats["unique_pgs"]))
-# print(stats["longest_page"][0])
-# print(find_50_most_common_words())
-# print(find_total_subdomains()) #only call once or counts will accumulate
 
 
 # Documentation:
