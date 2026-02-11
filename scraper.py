@@ -3,7 +3,7 @@ from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from utils.response import Response
 
-# dict to keep track of stat values
+# dictionary to keep track of stat values
 stats = {
     "unique_pgs": set(),
     "longest_page": ("", 0), #(url, wordcount)
@@ -18,13 +18,13 @@ def load_stopwords(path: str):
 STOP_WORDS = load_stopwords("stopwords.txt")
 
 def scraper(url: str, resp: Response) -> list:
-    """
-    url: the URL that was added to the frontier, and downloaded from the cache
+    """ Processes a downloaded page, returning the next valid links to crawl.
+    url: the URL that was added to the frontier and downloaded from the cache
         (type str and was an url that was previously added to the frontier)
-    resp: response given by the caching server for the requested URL 
+    resp: response given by the cache server for the requested URL 
         (an object of type Response)
     """
-    if resp.status == 200 and resp.raw_response and resp.raw_response.content:
+    if resp.status == 200 and resp.raw_response and resp.raw_response.content:  # onlys URLs with 200 status code & has content/a response
         # extract pg's text
         html = BeautifulSoup(resp.raw_response.content, "html.parser", from_encoding='utf-8') # encoding to handle char encoding errors
         pg_text = html.get_text(separator=" ")
@@ -55,7 +55,7 @@ def scraper(url: str, resp: Response) -> list:
     return []
 
 def extract_next_links(url: str, resp: Response) -> list:
-    """ Extracts all hyperlinks from a page's HTML content and returns them as a list of strings.
+    """ Extracts all <a href> from a page's HTML content and returns them as a list of strings.
         Args:
             url - the URL that was used to get the page
             resp - response from server
@@ -77,7 +77,7 @@ def extract_next_links(url: str, resp: Response) -> list:
             link = link.strip() # get rid of uncessary white space
 
             # skip malformed/broken URLs
-            if not link or "YOUR_IP" in link: #avoid valuerror
+            if "YOUR_IP" in link: #avoid valuerror
                 continue
 
             try:
@@ -124,7 +124,7 @@ def is_valid(url: str) -> bool:
         if not any (parsed.hostname == domain or parsed.hostname.endswith("." + domain) for domain in allowed_domains):
             return False
 
-        # Check for bad files (may be more)
+        # Check for bad files
         if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|jpg|ico" #added jpg
             + r"|png|img|tiff?|mid|mp2|mp3|mp4|mpg" # added mpg, img
@@ -184,9 +184,8 @@ def find_unique_pages(resp: Response):
 
 def find_longest_page(resp: Response):
     """ Finds the longest page based on word count.
-        Compares the current page count to the current longest page count.
-        Arg:
-            url - the URL of the page
+        Parses HTML from response and counts visible words.
+        Args:
             resp - the response from server
     """
     # for finding longest pg word-wise (extract only text from html)
@@ -197,9 +196,9 @@ def find_longest_page(resp: Response):
         stats["longest_page"] = (resp.url, num_words)
 
 def tokenize(text: str):
-    """Helper func for update_word_counts()
-    Turns the raw text into a list of lowercase words and removes punctuation.
-        Arg:
+    """Helper func for update_word_counts().
+    Turns the text into a list of lowercase words and removes punctuation from the beginning and end of the word.
+        Args:
             text - the raw text taken from the HTML page
         Returns: a list of lowercase words
     """
@@ -211,8 +210,8 @@ def tokenize(text: str):
 
 def update_word_counts(text: str):
     """ Updates the word count for each word on the page.
-        Arg:
-            text - the raw text taken from the HTML page
+        Args:
+            text - the text taken from the HTML page
     """
     tokens = tokenize(text)
     for token in tokens: 
@@ -221,15 +220,15 @@ def update_word_counts(text: str):
             stats["word_counts"][token] = stats["word_counts"].get(token, 0) + 1
 
 def find_50_most_common_words():
-    """ Finds 50 most common words from all the pages crawled.
-        Returns: list of tuples sorted by count
+    """ Finds 50 most common words from all the valid pages crawled.
+        Returns: list of tuples (word, count) sorted by count in descending order
     """
     return sorted(stats["word_counts"].items(), key=lambda x: x[1], reverse=True)[:50]
 
 def find_total_subdomains() -> list:
-    """ Finds all subdomains and counts how many unique pages are found.
+    """ Finds all subdomains and counts of how many unique pages are found.
         Groups unique pages by their subdomain.
-        Returns: a list of tuples sorted alphabetically
+        Returns: a list of tuples (subdomain, count) sorted alphabetically
     """
     # for finding num of subdomains
     unique_pgs = stats["unique_pgs"]

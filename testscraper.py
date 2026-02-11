@@ -7,7 +7,7 @@ import scraper
 with open("stats.json", "r", encoding="utf-8") as f:
     loaded_stats = json.load(f)
     
-scraper.stats.update(loaded_stats)
+scraper.stats.update(loaded_stats) # update stats dictionary with data from crawl
 print(len(scraper.stats["unique_pgs"]))
 print(scraper.stats["longest_page"][0])
 print(scraper.stats["longest_page"][1])
